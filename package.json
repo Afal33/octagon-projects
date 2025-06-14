@@ -1,0 +1,14 @@
+{
+  "name": "sozidal",
+  "version": "0.0.1",
+  "main": "app.js",
+  "scripts": {
+     "start": "nodemon app.js"
+   },
+   "dependencies": {
+    "nodemon": "^3.0.1"
+   },
+  "author": "Roman Afanasiev",
+  "license": "ISC",
+  "description": ""
+}
