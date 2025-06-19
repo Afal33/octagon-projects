@@ -3,12 +3,22 @@
   "version": "0.0.1",
   "main": "app.js",
   "scripts": {
-     "start": "nodemon app.js"
-   },
-   "dependencies": {
+    "start": "nodemon app.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
     "nodemon": "^3.0.1"
-   },
+  },
   "author": "Roman Afanasiev",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Afal33/octagon-projects.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/Afal33/octagon-projects/issues"
+  },
+  "homepage": "https://github.com/Afal33/octagon-projects#readme",
   "description": ""
 }
