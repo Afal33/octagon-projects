@@ -1,8 +1,9 @@
-const http = require("http");
-http.createServer(function(request,response){
-    response.writeHead(200, {'content-type': 'text/html; charset=utf-8'});
-    response.end("<h1>Привет, Октагон!</h1>");
-     
-}).listen(3000, "127.0.0.1",function(){
-    console.log("Сервер начал прослушивание запросов на порту 3000");
+const express = require('express');
+const app = express();
+const routes = require('./routes');
+
+app.use('/', routes);
+
+app.listen(3000, () => {
+  console.log('Сервер запущен на http://localhost:3000');
 });

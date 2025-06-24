@@ -8,22 +8,15 @@ app.get('/static', (req, res) => {
     body: 'Octagon NodeJS Test'
   });
 });
+
 app.get('/dynamic', (req, res) => {
   const { a, b, c } = req.query;
 
-  const numA = Number(a);
-  const numB = Number(b);
-  const numC = Number(c);
-
-  if (
-    isNaN(numA) ||
-    isNaN(numB) ||
-    isNaN(numC)
-  ) {
+  if (isNaN(Number(a)) || isNaN(Number(b)) || isNaN(Number(c))) {
     return res.json({ header: 'Error' });
   }
 
-  const result = (numA * numB * numC) / 3;
+  const result = (Number(a) * Number(b) * Number(c)) / 3;
 
   res.json({
     header: 'Calculated',
