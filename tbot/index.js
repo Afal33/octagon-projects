@@ -3,6 +3,7 @@ const token = '7036221904:AAE7mdVIL68ms9KS4LfsJ3VG3jNwtOKW5RE';
 const bot = new TelegramBot(token, { polling: true });
 const QRCode = require('qrcode');
 const puppeteer = require('puppeteer');
+const mysql = require('mysql2/promise');
 const { getRandomItem, getItemById, deleteItem } = require('./queries');
 
 //bot.on('message', (msg) => {
@@ -97,3 +98,67 @@ bot.onText(/webscr (https?:\/\/\S+)/, async (msg, match) => {
     if (browser) await browser.close();
   }
 });
+
+const db = mysql.createPool({
+  host:     'localhost',
+  user:     'root',
+  password: '',
+  database: 'ChatBotTests'
+});
+
+bot.on('message', async msg => {
+  const chatId = msg.chat.id;
+  const userId = msg.from.id;
+
+  try {
+    await db.execute(
+      `INSERT INTO user_activity (user_id, last_message)
+       VALUES (?, NOW())
+       ON DUPLICATE KEY UPDATE last_message = NOW()`,
+      [userId]
+    );
+  } catch (err) {
+    console.error('DB error:', err);
+  }
+});
+
+// случайные сообщения для пользователей, которые не писали >2 суток
+const randomItems = [
+  'Привет! Как дела?',
+  'Надеюсь, у тебя отличный день!',
+];
+
+// Функция, отправляющая randomItem тем, кто не писал >2 суток
+async function runDailyCheck() {
+  try {
+    const [rows] = await db.query(
+      `SELECT user_id
+       FROM user_activity
+       WHERE last_message < DATE_SUB(NOW(), INTERVAL 2 DAY)`,
+    );
+
+    for (const { user_id } of rows) {
+      const text = randomItems[Math.floor(Math.random() * randomItems.length)];
+      await bot.sendMessage(user_id, text);
+    }
+  } catch (err) {
+    console.error('Error in daily check:', err);
+  }
+}
+
+// Запустить задачу в ближайшее 13:00 МСК, а затем каждые 24 ч
+function scheduleDailyJob() {
+  const now    = new Date();
+  const target = new Date(now);
+  target.setHours(13, 0, 0, 0);
+  if (now > target) target.setDate(target.getDate() + 1);
+
+  const msUntilTarget = target - now;
+
+  setTimeout(() => {
+    runDailyCheck();
+    setIntervalAsync(runDailyCheck, 24 * 60 * 60 * 1000); 
+  }, msUntilTarget);
+}
+
+scheduleDailyJob();
