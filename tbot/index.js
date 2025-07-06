@@ -1,10 +1,37 @@
+require('dotenv').config({
+  path: './.env',
+  encoding: 'utf8'
+});
 const TelegramBot = require('node-telegram-bot-api');
-const token = '7036221904:AAE7mdVIL68ms9KS4LfsJ3VG3jNwtOKW5RE';
-const bot = new TelegramBot(token, { polling: true });
+const bot = new TelegramBot(process.env.TELEGRAM_TOKEN, { polling: true });
 const QRCode = require('qrcode');
 const puppeteer = require('puppeteer');
 const mysql = require('mysql2/promise');
+const axios = require('axios');
+const { getForecast } = require('./weatherService');
 const { getRandomItem, getItemById, deleteItem } = require('./queries');
+
+
+bot.onText(/\/start/, msg => {
+  const chatId = msg.chat.id;
+
+  const keyboard = {
+    reply_markup: {
+      resize_keyboard: true,
+      one_time_keyboard: true,
+      keyboard: [
+        ['!qr',  '!webscr'],
+        ['!weather',  '!stats']
+      ]
+    }
+  };
+
+  bot.sendMessage(
+    chatId,
+    'Выберите команду:',
+    keyboard
+  );
+});
 
 //bot.on('message', (msg) => {
   //const chatId = msg.chat.id;
@@ -162,3 +189,60 @@ function scheduleDailyJob() {
 }
 
 scheduleDailyJob();
+
+bot.onText(/\/weather(?:\s+(today|tomorrow|week))?\s+(.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  const mode = match[1] || 'today'; // по умолчанию today
+  const city = match[2].trim();
+
+  try {
+    const data = await getForecast(city);
+    const list = data.list;
+    let response = '';
+
+    if (mode === 'today') {
+      const today = new Date().getDate();
+      const todayData = list.filter(item => new Date(item.dt_txt).getDate() === today);
+      response = `🌤 Сегодня в ${data.city.name}:\n` + todayData.slice(0, 4).map(item => {
+        const time = item.dt_txt.slice(11, 16);
+        return `${time}: ${item.weather[0].description}, ${Math.round(item.main.temp)}°C`;
+      }).join('\n');
+
+    } else if (mode === 'tomorrow') {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const day = tomorrow.getDate();
+      const tomorrowData = list.filter(item => new Date(item.dt_txt).getDate() === day);
+      response = `🌥 Завтра в ${data.city.name}:\n` + tomorrowData.slice(0, 4).map(item => {
+        const time = item.dt_txt.slice(11, 16);
+        return `${time}: ${item.weather[0].description}, ${Math.round(item.main.temp)}°C`;
+      }).join('\n');
+
+    } else if (mode === 'week') {
+      const days = {};
+      list.forEach(item => {
+        const date = new Date(item.dt_txt).toLocaleDateString('ru-RU', {
+          weekday: 'short', day: 'numeric', month: 'short'
+        });
+        if (!days[date]) days[date] = { temp: [], desc: [] };
+        days[date].temp.push(item.main.temp);
+        days[date].desc.push(item.weather[0].description);
+      });
+
+      const summary = Object.entries(days).slice(0, 5).map(([date, val]) => {
+        const avg = Math.round(val.temp.reduce((a, b) => a + b, 0) / val.temp.length);
+        const description = val.desc[Math.floor(val.desc.length / 2)];
+        return `${date}: ${description}, около ${avg}°C`;
+      });
+
+      response = `📅 Прогноз на 5 дней в ${data.city.name}:\n` + summary.join('\n');
+    }
+
+    bot.sendMessage(chatId, response);
+  } catch (err) {
+    console.error('❌ Ошибка при получении прогноза:', err.message);
+    bot.sendMessage(chatId, `Не удалось получить погоду для города «${city}». Попробуй другой.`);
+  }
+});
+//--------------------------------
+
