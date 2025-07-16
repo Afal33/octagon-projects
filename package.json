@@ -6,9 +6,12 @@
     "start": "nodemon app.js"
   },
   "dependencies": {
+    "axios": "^1.10.0",
+    "dotenv": "^17.0.1",
     "express": "^5.1.0",
     "mysql": "^2.18.1",
     "mysql2": "^3.14.1",
+    "node-telegram-bot-api": "^0.66.0",
     "nodemon": "^3.0.1"
   },
   "author": "Roman Afanasiev",

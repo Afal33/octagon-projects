@@ -7,4 +7,4 @@ const pool = mysql.createPool({
     database: 'ChatBotTests'
 });
 
-module.exports = pool;
+module.exports = pool.promise();
